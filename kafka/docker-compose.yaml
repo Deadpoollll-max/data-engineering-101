@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.8.3
+    container_name: kafka
+    ports:
+      - "9092:9092"
+
+    environment:
+      KAFKA_KRAFT_MODE: 'true' 
+      # kraft is the built in system of kafka which allows it to manage its own metadata and kafka cluster coordination
+
+      # kafka is designed to run as a cluster made up of multiple nodes and these nodes are called kafka brokers. Brokers store and manage the data(as topics and partitions)
+      # brokers handle request from producers that are sending data and cosumers which recieve the data.
+      # In production environment we will have cluster of multiple brokers. Kafka will be deployed as cluster
+      # One of the broker will have a roll caller controller(master).Only one broker is an active controller.
+
+      CLUSTER_ID: '1L6g7nGhU-eAKfL--X25wo'
+      KAFKA_NODE_ID: 1
+
+      # Kafka_process_roles : this configuaration tells kafka that the node 1 will act as both broker and controller.
+      # As broker node 1 : it will store and serve data 
+
+      # As controller node 1 : will manage the cluster coordination
+
+      # in KRAFT_MODE a node can play either broker or controller or both roles.
+
+      # KAFKA_CONTROLLER_QUORUM_VOTERS:is an environment variable which defines which brokers are controllers and vote for cluster decisions.
+      # KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093 if we had 2 or more it would have been defined like this 1@kafka:9093,2@kafka:9093,3@kafka:9093
+
+      # KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: when we set replication factor to 1 , there is only one copy of kafka meta data, that keeps track of which consumers have read which events.
+      # In production environment replication factor is always greater than one. Default value is 3 if we do not set it manually.
+
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+      # KAFKA_LISTENERS: this tells kafka to open 2 doors, one for regular data traffic at PLAINTEXT://0.0.0.0:9092 for producers and consumers.
+      # the second door, CONTROLLER://0.0.0.0:9093 for controller communication (NODE -> NODE)
+
+      # KAFKA_ADVERTISED_LISTENERS:  which tells the client explicitly tells clients to connect to PLAINTEXT://localhost:9092.
+
+      # KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER tells controllers to use CONTROLLER://0.0.0.0:9093
+
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # KAFKA_LOG_DIRS: /tmp/kraft-combined-logs - this basically tells kafka where to store its data files, brocker logs, controller metadata and so on.
+
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+
+    volumes:
+      - kafka_kraft:/var/lib/kafka/data
+      # volumes : the data that kafka generates and stores, docker contrainers have virtual file system where this is stores.
+
+volumes:
+  kafka_kraft:
